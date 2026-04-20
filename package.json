@@ -12,6 +12,7 @@
     "@zxing/browser": "^0.1.5",
     "file-saver": "^2.0.5",
     "jszip": "^3.10.1",
+    "lucide-react": "^0.473.0",
     "puppeteer": "^24.41.0",
     "qrcode.react": "^4.2.0",
     "react": "^19.2.0",
