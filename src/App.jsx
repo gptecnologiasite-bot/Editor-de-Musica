@@ -267,8 +267,18 @@ function App() {
   const [isProcessing, setIsProcessing] = useState(false)
   const [message, setMessage] = useState('')
   const [sponsorshipQR, setSponsorshipQR] = useState(localStorage.getItem('holyrics_qr') || qrCodePix)
+  const [favicon, setFavicon] = useState(localStorage.getItem('holyrics_favicon') || '/favicon.png')
   const [apiKey, setApiKey] = useState(localStorage.getItem('holyrics_api_key') || '')
   const [apiStatus, setApiStatus] = useState(apiKey ? 'valid' : 'missing')
+
+  // Atualizar Favicon Dinamicamente
+  useEffect(() => {
+    const link = document.querySelector("link[rel*='icon']") || document.createElement('link');
+    link.type = 'image/png';
+    link.rel = 'shortcut icon';
+    link.href = favicon;
+    document.getElementsByTagName('head')[0].appendChild(link);
+  }, [favicon]);
 
   const handleApiKeyChange = (val) => {
     setApiKey(val);
@@ -284,6 +294,21 @@ function App() {
       setMessage('API Key validada com sucesso!');
       setTimeout(() => setMessage(''), 3000);
     }, 1500);
+  };
+
+  const handleFaviconUpload = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const dataUrl = event.target.result;
+        setFavicon(dataUrl);
+        localStorage.setItem('holyrics_favicon', dataUrl);
+        setMessage('Favicon atualizado com sucesso!');
+        setTimeout(() => setMessage(''), 3000);
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   const handleQRUpload = (e) => {
@@ -633,6 +658,13 @@ function App() {
             </button>
           </div>
           <p className="api-help-text">Sua chave é salva localmente e usada apenas para o processamento de IA.</p>
+          
+          <div style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid rgba(148, 163, 184, 0.1)' }}>
+            <label className="test-api-btn active" style={{ cursor: 'pointer', display: 'flex', gap: 8, justifyContent: 'center' }}>
+              <ImageIcon size={14} /> Alterar Favicon do Sistema
+              <input type="file" onChange={handleFaviconUpload} style={{ display: 'none' }} accept="image/*" />
+            </label>
+          </div>
         </div>
       </aside>
     </div>
