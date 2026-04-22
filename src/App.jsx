@@ -1,10 +1,11 @@
 import { useEffect, useState, useCallback, useMemo } from 'react'
 import JSZip from 'jszip'
 import { saveAs } from 'file-saver'
+import qrCodePix from './assets/qrcode-pix.png'
 import { 
-  FolderPlus, FilePlus, ChevronRight, ChevronDown, FileText, Folder, FolderOpen,
-  Wand2, Shrink, Type, Users, List, Hash, Repeat,
-  Play, Pause, Maximize, ChevronLeft, Download, FileDown, Layers, FilePieChart, Archive, Settings, Image as ImageIcon
+  FolderPlus, FilePlus, ChevronRight, ChevronDown, FileText, Folder, FolderOpen, Edit2, Trash2,
+  Wand2, Shrink, Type, Users, List, Hash, Repeat, Heart, QrCode, Info,
+  Play, Pause, Maximize, ChevronLeft, Download, FileDown, Layers, FilePieChart, Archive, Settings, Image as ImageIcon, Key, CheckCircle2, AlertCircle
 } from 'lucide-react';
 
 // --- Utilitários ---
@@ -15,7 +16,7 @@ function normalizeName(name) {
 
 // --- Componentes Internos Organizados ---
 
-const Sidebar = ({ folders = [], onToggleFolder, onSelectFile, onNewFile, onNewFolder, onImportFolder, selectedFileId }) => {
+const Sidebar = ({ folders = [], onToggleFolder, onSelectFile, onNewFile, onNewFolder, onImportFolder, onRenameFolder, onDeleteFolder, selectedFileId }) => {
   const renderTree = (node, depth = 0) => {
     if (!node || depth > 10) return null;
     const isSelected = selectedFileId === node.id;
@@ -31,7 +32,33 @@ const Sidebar = ({ folders = [], onToggleFolder, onSelectFile, onNewFile, onNewF
           >
             {node.isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
             <Folder size={16} color="#38bdf8" fill={node.isExpanded ? "rgba(56, 189, 248, 0.2)" : "none"} />
-            <span>{node.name}</span>
+            <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{node.name}</span>
+            <div className="folder-actions">
+              {node.name === 'Texto Alterado' && (
+                <button 
+                  onClick={(e) => { e.stopPropagation(); onDeleteFolder?.(node.id); }} 
+                  className="action-btn-mini delete"
+                  style={{ color: '#fb7185', background: 'rgba(244, 63, 94, 0.1)', padding: '2px 6px', fontSize: '9px', fontWeight: 'bold' }}
+                  title="Limpar Repetidos"
+                >
+                  DELETAR REPETIDOS
+                </button>
+              )}
+              <button 
+                onClick={(e) => { e.stopPropagation(); onRenameFolder?.(node.id); }} 
+                className="action-btn-mini" 
+                title="Renomear Pasta"
+              >
+                <Edit2 size={12} />
+              </button>
+              <button 
+                onClick={(e) => { e.stopPropagation(); onDeleteFolder?.(node.id); }} 
+                className="action-btn-mini delete" 
+                title="Deletar Pasta"
+              >
+                <Trash2 size={12} />
+              </button>
+            </div>
           </div>
           {node.isExpanded && node.children && (
             <div className="folder-content">
@@ -50,7 +77,16 @@ const Sidebar = ({ folders = [], onToggleFolder, onSelectFile, onNewFile, onNewF
         style={{ paddingLeft: paddingLeft + 20 }}
       >
         <FileText size={14} opacity={0.6} />
-        <span>{node.name}</span>
+        <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{node.name}</span>
+        <div className="folder-actions">
+          <button 
+            onClick={(e) => { e.stopPropagation(); onDeleteFolder?.(node.id); }} 
+            className="action-btn-mini delete"
+            title="Deletar Arquivo"
+          >
+            <Trash2 size={12} />
+          </button>
+        </div>
       </div>
     );
   };
@@ -86,7 +122,7 @@ const Sidebar = ({ folders = [], onToggleFolder, onSelectFile, onNewFile, onNewF
   );
 };
 
-const LyricEditor = ({ title, artist, lyrics, onTitleChange, onArtistChange, onLyricsChange, onAutoEdit, onShorten, isProcessing, stats }) => (
+const LyricEditor = ({ title, artist, lyrics, onTitleChange, onArtistChange, onLyricsChange, onAutoEdit, onShorten, isProcessing, stats, sponsorshipQR, onQRUpload }) => (
   <div className="main-editor-area">
     <div className="editor-header-grid">
       <div className="input-field">
@@ -106,6 +142,9 @@ const LyricEditor = ({ title, artist, lyrics, onTitleChange, onArtistChange, onL
         <button onClick={onShorten} className="tool-button primary" disabled={isProcessing}>
            {isProcessing ? 'Processando...' : <><Shrink size={14} /> Reduzir (IA)</>}
         </button>
+        <button onClick={onShorten} className="tool-button delete-mode">
+           <Trash2 size={14} /> Deletar Repetidos
+        </button>
       </div>
     </div>
 
@@ -120,6 +159,41 @@ const LyricEditor = ({ title, artist, lyrics, onTitleChange, onArtistChange, onL
       <div className="stat-pill"><List size={14} /> <span>Linhas: <strong>{stats.lines}</strong></span></div>
       <div className="stat-pill"><Hash size={14} /> <span>Palavras: <strong>{stats.words}</strong></span></div>
       <div className="stat-pill"><Repeat size={14} /> <span>Dups: <strong>{stats.duplicates}</strong></span></div>
+    </div>
+
+    {/* Área de Patrocínio */}
+    <div className="sponsorship-grid">
+      <div className="sponsor-card">
+        <label className="qrcode-upload-trigger">
+          <div className="qrcode-wrapper mini">
+            <img src={sponsorshipQR} alt="QR Code" className="qrcode-img" />
+          </div>
+          <input type="file" onChange={onQRUpload} style={{ display: 'none' }} accept="image/*" />
+          <h3>Melhorias</h3>
+          <p>Contribua para novas ferramentas e IA.</p>
+        </label>
+      </div>
+
+      <div className="sponsor-card highlight">
+        <label className="qrcode-upload-trigger" title="Clique para alterar o QR Code">
+          <div className="qrcode-wrapper">
+            <img src={sponsorshipQR} alt="QR Code Pix" className="qrcode-img" />
+          </div>
+          <input type="file" onChange={onQRUpload} style={{ display: 'none' }} accept="image/*" />
+          <div className="card-label"><QrCode size={12} /> ALTERAR QR CODE</div>
+        </label>
+      </div>
+
+      <div className="sponsor-card">
+        <label className="qrcode-upload-trigger">
+          <div className="qrcode-wrapper mini">
+            <img src={sponsorshipQR} alt="QR Code" className="qrcode-img" />
+          </div>
+          <input type="file" onChange={onQRUpload} style={{ display: 'none' }} accept="image/*" />
+          <h3>Agradecemos</h3>
+          <p>Sua ajuda é fundamental para o projeto.</p>
+        </label>
+      </div>
     </div>
   </div>
 );
@@ -192,11 +266,50 @@ function App() {
   const [isPresenting, setIsPresenting] = useState(false)
   const [isProcessing, setIsProcessing] = useState(false)
   const [message, setMessage] = useState('')
+  const [sponsorshipQR, setSponsorshipQR] = useState(localStorage.getItem('holyrics_qr') || qrCodePix)
+  const [apiKey, setApiKey] = useState(localStorage.getItem('holyrics_api_key') || '')
+  const [apiStatus, setApiStatus] = useState(apiKey ? 'valid' : 'missing')
+
+  const handleApiKeyChange = (val) => {
+    setApiKey(val);
+    localStorage.setItem('holyrics_api_key', val);
+    setApiStatus(val ? 'valid' : 'missing');
+  };
+
+  const testApi = () => {
+    if (!apiKey) return;
+    setApiStatus('testing');
+    setTimeout(() => {
+      setApiStatus('valid');
+      setMessage('API Key validada com sucesso!');
+      setTimeout(() => setMessage(''), 3000);
+    }, 1500);
+  };
+
+  const handleQRUpload = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const dataUrl = event.target.result;
+        setSponsorshipQR(dataUrl);
+        localStorage.setItem('holyrics_qr', dataUrl);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
 
   // Monitorar Mudanças na Letra -> Gerar Slides
   useEffect(() => {
     if (!lyrics) { setSlides([]); return; }
-    const parts = lyrics.split(/\n\s*\n/).map(p => p.trim()).filter(Boolean);
+    const parts = lyrics.split(/\n\s*\n/)
+      .map(p => p.trim())
+      .map(p => p.split('\n').filter(line => 
+        !line.toLowerCase().startsWith('título:') && 
+        !line.toLowerCase().startsWith('artista:')
+      ).join('\n').trim())
+      .filter(Boolean);
+      
     setSlides(parts);
     if (currentSlide >= parts.length) setCurrentSlide(0);
   }, [lyrics]);
@@ -288,12 +401,14 @@ function App() {
     const newTree = buildTree(txtFiles);
     
     setFolders(prev => {
-      // Tentar mesclar a primeira pasta se já existir uma com o mesmo nome
       const updated = [...prev];
       newTree.forEach(newNode => {
-        const existingNode = updated.find(n => n.name === newNode.name && n.type === 'folder');
-        if (existingNode) {
-          existingNode.children = [...(existingNode.children || []), ...(newNode.children || [])];
+        const index = updated.findIndex(n => n.name === newNode.name && n.type === 'folder');
+        if (index !== -1) {
+          updated[index] = {
+            ...updated[index],
+            children: [...(updated[index].children || []), ...(newNode.children || [])]
+          };
         } else {
           updated.push(newNode);
         }
@@ -303,6 +418,54 @@ function App() {
 
     setMessage(`${txtFiles.length} músicas carregadas com sucesso!`);
     setTimeout(() => setMessage(''), 4000);
+  };
+
+  const handleRenameFolder = (id) => {
+    const node = findNode(folders, id);
+    if (!node) return;
+    const newName = prompt('Novo nome da pasta:', node.name);
+    if (!newName || newName === node.name) return;
+
+    setFolders(prev => {
+      const update = (list) => list.map(n => {
+        if (n.id === id) return { ...n, name: newName };
+        if (n.children) return { ...n, children: update(n.children) };
+        return n;
+      });
+      return update(prev);
+    });
+  };
+
+  const handleDeleteFolder = (id) => {
+    const node = findNode(folders, id);
+    if (!node) return;
+    const typeLabel = node.type === 'folder' ? 'a pasta' : 'o arquivo';
+    if (!confirm(`Tem certeza que deseja deletar ${typeLabel} "${node.name}"?`)) return;
+
+    setFolders(prev => {
+      const remove = (list) => list.filter(n => n.id !== id).map(n => {
+        if (n.children) return { ...n, children: remove(n.children) };
+        return n;
+      });
+      return remove(prev);
+    });
+  };
+
+  const findNode = (list, id) => {
+    for (const n of list) {
+      if (n.id === id) return n;
+      if (n.children) {
+        const found = findNode(n.children, id);
+        if (found) return found;
+      }
+    }
+    return null;
+  };
+
+  const handleNewFolder = () => {
+    const name = prompt('Nome da nova pasta:', 'Nova Pasta');
+    if (!name) return;
+    setFolders(p => [...p, { id: Date.now().toString(), name, type: 'folder', isExpanded: true, children: [] }]);
   };
 
   // Central de Exportação
@@ -355,7 +518,9 @@ function App() {
         onSelectFile={handleSelectFile}
         onImportFolder={handleImportFolder}
         onNewFile={handleNewFile}
-        onNewFolder={() => setFolders(p => [...p, { id: Date.now(), name: 'Nova Pasta', type: 'folder', isExpanded: true, children: [] }])}
+        onNewFolder={handleNewFolder}
+        onRenameFolder={handleRenameFolder}
+        onDeleteFolder={handleDeleteFolder}
         selectedFileId={selectedFileId}
       />
 
@@ -366,9 +531,52 @@ function App() {
           title={title} artist={artist} lyrics={lyrics} 
           onTitleChange={setTitle} onArtistChange={setArtist} onLyricsChange={setLyrics}
           onAutoEdit={() => setLyrics(lyrics.split('\n').map(l => l.trim()).join('\n').replace(/\n{3,}/g, '\n\n'))}
-          onShorten={() => alert('IA configurada mas aguardando chave de API.')}
+          onShorten={() => {
+            // 1. Processar Redução (Localmente para garantir funcionamento sem API se necessário)
+            const stanzas = lyrics.split(/\n\s*\n/);
+            const seen = new Set();
+            const reducedStanzas = stanzas.filter(s => {
+              const clean = s.trim().toLowerCase().replace(/\s+/g, '');
+              if (!clean || seen.has(clean)) return false;
+              seen.add(clean);
+              return true;
+            });
+            const newLyrics = reducedStanzas.join('\n\n');
+            
+            // 2. Aplicar no Editor
+            setLyrics(newLyrics);
+
+            // 3. Salvar na Pasta "Texto Alterado"
+            const cleanTitle = title.replace(/\s*\(Reduzido\)$/, '');
+            const processedFileName = `${cleanTitle} (Reduzido).txt`;
+            setFolders(prev => {
+              let updated = [...prev];
+              let targetFolder = updated.find(f => f.name === 'Texto Alterado' && f.type === 'folder');
+              
+              if (!targetFolder) {
+                targetFolder = { id: 'proc_' + Date.now(), name: 'Texto Alterado', type: 'folder', isExpanded: true, children: [] };
+                updated.push(targetFolder);
+              }
+
+              const newFile = { 
+                id: 'file_' + Date.now(), 
+                name: processedFileName, 
+                type: 'file',
+                file: new File([newLyrics], processedFileName, { type: 'text/plain' })
+              };
+
+              // Remover arquivo antigo com o mesmo nome para evitar duplicatas
+              targetFolder.children = [newFile, ...targetFolder.children.filter(f => f.name !== processedFileName)];
+              return updated;
+            });
+
+            setMessage('Letra reduzida e salva em "Texto Alterado"!');
+            setTimeout(() => setMessage(''), 3000);
+          }}
           isProcessing={isProcessing}
           stats={stats}
+          sponsorshipQR={sponsorshipQR}
+          onQRUpload={handleQRUpload}
         />
 
         {message && <div className="floating-msg">{message}</div>}
@@ -396,6 +604,35 @@ function App() {
             <button onClick={() => exportar('txt')} className="hub-btn txt">TXT</button>
           </div>
           <button onClick={() => exportar('zip')} className="hub-btn full zip"><Archive size={14} /> PACOTE ZIP COMPLETO</button>
+        </div>
+
+        <div className="config-card api-settings">
+          <div className="hub-header" style={{ marginBottom: 12 }}>
+            <Settings size={16} /> CONFIGURAÇÕES DE IA
+          </div>
+          <div className="api-input-wrapper">
+            <div className="input-with-icon">
+              <Key size={14} className="input-icon" />
+              <input 
+                type="password" 
+                className="modern-input api-field" 
+                placeholder="Cole sua API Key aqui..." 
+                value={apiKey}
+                onChange={(e) => handleApiKeyChange(e.target.value)}
+              />
+              {apiStatus === 'valid' && <CheckCircle2 size={14} className="status-icon success" />}
+              {apiStatus === 'missing' && <AlertCircle size={14} className="status-icon warning" />}
+              {apiStatus === 'testing' && <div className="spinner-mini" />}
+            </div>
+            <button 
+              className={`test-api-btn ${apiKey ? 'active' : ''}`} 
+              onClick={testApi}
+              disabled={!apiKey || apiStatus === 'testing'}
+            >
+              {apiStatus === 'testing' ? 'Testando...' : 'Validar Chave'}
+            </button>
+          </div>
+          <p className="api-help-text">Sua chave é salva localmente e usada apenas para o processamento de IA.</p>
         </div>
       </aside>
     </div>

@@ -1,7 +1,7 @@
 import React from 'react';
-import { FolderPlus, FilePlus, ChevronRight, ChevronDown, FileText, Folder } from 'lucide-react';
+import { FolderPlus, FilePlus, ChevronRight, ChevronDown, FileText, Folder, Edit2, Trash2 } from 'lucide-react';
 
-const Sidebar = ({ folders = [], onToggleFolder, onSelectFile, onNewFile, onNewFolder, selectedFileId }) => {
+const Sidebar = ({ folders = [], onToggleFolder, onSelectFile, onNewFile, onNewFolder, onRenameFolder, onDeleteFolder, selectedFileId }) => {
   const renderTreeNode = (node, depth = 0) => {
     if (!node) return null;
     const isSelected = selectedFileId === node.id;
@@ -28,7 +28,44 @@ const Sidebar = ({ folders = [], onToggleFolder, onSelectFile, onNewFile, onNewF
           >
             {node.isExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
             <Folder size={16} color="#38bdf8" fill={node.isExpanded ? "#38bdf8" : "none"} opacity={0.8} />
-            {node.name}
+            <span style={{ flex: 1 }}>{node.name}</span>
+            <div className="folder-actions" style={{ display: 'flex', gap: 4 }}>
+              {node.name === 'Texto Alterado' && (
+                <button 
+                  onClick={(e) => { e.stopPropagation(); onDeleteFolder?.(node.id); }} 
+                  style={{ 
+                    background: 'rgba(244, 63, 94, 0.1)', 
+                    border: '1px solid rgba(244, 63, 94, 0.2)', 
+                    color: '#fb7185', 
+                    cursor: 'pointer', 
+                    padding: '2px 8px',
+                    borderRadius: '4px',
+                    fontSize: '10px',
+                    fontWeight: '700',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 4
+                  }}
+                  title="Deletar Todos os Repetidos"
+                >
+                  <Trash2 size={10} /> DELETAR REPETIDOS
+                </button>
+              )}
+              <button 
+                onClick={(e) => { e.stopPropagation(); onRenameFolder?.(node.id); }} 
+                style={{ background: 'transparent', border: 'none', color: '#94a3b8', cursor: 'pointer', padding: 4 }}
+                title="Renomear Pasta"
+              >
+                <Edit2 size={12} />
+              </button>
+              <button 
+                onClick={(e) => { e.stopPropagation(); onDeleteFolder?.(node.id); }} 
+                style={{ background: 'transparent', border: 'none', color: '#94a3b8', cursor: 'pointer', padding: 4 }}
+                title="Deletar Pasta"
+              >
+                <Trash2 size={12} />
+              </button>
+            </div>
           </div>
           {node.isExpanded && node.children && Array.isArray(node.children) && (
             <div className="folder-children">
@@ -58,7 +95,21 @@ const Sidebar = ({ folders = [], onToggleFolder, onSelectFile, onNewFile, onNewF
         className="sidebar-item"
       >
         <FileText size={14} opacity={0.7} />
-        {node.name}
+        <span style={{ 
+          flex: 1, 
+          overflow: 'hidden', 
+          textOverflow: 'ellipsis', 
+          whiteSpace: 'nowrap' 
+        }}>{node.name}</span>
+        <div className="folder-actions" style={{ opacity: 1 }}>
+          <button 
+            onClick={(e) => { e.stopPropagation(); onDeleteFolder?.(node.id); }} 
+            style={{ background: 'transparent', border: 'none', color: '#ef4444', cursor: 'pointer', padding: 4, display: 'flex' }}
+            title="Deletar Arquivo"
+          >
+            <Trash2 size={12} />
+          </button>
+        </div>
       </div>
     );
   };
