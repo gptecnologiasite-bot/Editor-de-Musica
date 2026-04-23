@@ -5,7 +5,7 @@ import qrCodePix from './assets/qrcode-pix.png'
 import { 
   FolderPlus, FilePlus, ChevronRight, ChevronDown, FileText, Folder, FolderOpen, Edit2, Trash2,
   Wand2, Shrink, Type, Users, List, Hash, Repeat, Heart, QrCode, Info,
-  Play, Pause, Maximize, ChevronLeft, Download, FileDown, Layers, FilePieChart, Archive, Settings, Image as ImageIcon, Key, CheckCircle2, AlertCircle
+  Play, Pause, Maximize, ChevronLeft, Download, FileDown, Layers, FilePieChart, Archive, Settings, Image as ImageIcon, Key, CheckCircle2, AlertCircle, Menu, X
 } from 'lucide-react';
 
 // --- Utilitários ---
@@ -270,6 +270,7 @@ function App() {
   const [favicon, setFavicon] = useState(localStorage.getItem('holyrics_favicon') || '/favicon.png')
   const [apiKey, setApiKey] = useState(localStorage.getItem('holyrics_api_key') || '')
   const [apiStatus, setApiStatus] = useState(apiKey ? 'valid' : 'missing')
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false)
 
   // Atualizar Favicon Dinamicamente
   useEffect(() => {
@@ -537,17 +538,27 @@ function App() {
 
   return (
     <div className="app-container">
-      <Sidebar 
-        folders={folders} 
-        onToggleFolder={handleToggleFolder} 
-        onSelectFile={handleSelectFile}
-        onImportFolder={handleImportFolder}
-        onNewFile={handleNewFile}
-        onNewFolder={handleNewFolder}
-        onRenameFolder={handleRenameFolder}
-        onDeleteFolder={handleDeleteFolder}
-        selectedFileId={selectedFileId}
-      />
+      <div className={`sidebar-wrapper ${isSidebarOpen ? 'open' : ''}`}>
+        <div className="sidebar-overlay" onClick={() => setIsSidebarOpen(false)} />
+        <Sidebar 
+          folders={folders} 
+          onToggleFolder={handleToggleFolder} 
+          onSelectFile={(node) => { handleSelectFile(node); setIsSidebarOpen(false); }}
+          onImportFolder={handleImportFolder}
+          onNewFile={handleNewFile}
+          onNewFolder={handleNewFolder}
+          onRenameFolder={handleRenameFolder}
+          onDeleteFolder={handleDeleteFolder}
+          selectedFileId={selectedFileId}
+        />
+      </div>
+
+      <header className="mobile-header">
+        <button className="menu-toggle" onClick={() => setIsSidebarOpen(!isSidebarOpen)}>
+          {isSidebarOpen ? <X size={24} /> : <Menu size={24} />}
+        </button>
+        <h1 className="mobile-logo">HOLYRICS <span>2.0</span></h1>
+      </header>
 
       <main className="main-content-scroll">
         <h1 className="main-logo-text">HOLYRICS <span>EDITOR 2.0</span></h1>
